@@ -13,10 +13,22 @@ const SearchBooks = () => {
   const [searchedBooks, setSearchedBooks] = useState([]);
   // create state for holding our search field data
   const [searchInput, setSearchInput] = useState('');
-
   // create state to hold saved bookId values
   const [savedBookIds, setSavedBookIds] = useState(getSavedBookIds());
-
+  
+  const [saveBook, {error}] = useMutation(SAVE_BOOK, {
+    update(cache, {data: {saveBook}}) {    //update cache list after mutation to display new values
+      try { 
+        const { me } = cache.readQuery({ query: GET_ME }); 
+        cache.writeQuery({ 
+          query: GET_ME, 
+          data: { savedBooks: [saveBook, ...me.savedBooks] }, 
+        }); 
+      } catch (e) { 
+        console.error(e); 
+      }
+    }
+  });
   // set up useEffect hook to save `savedBookIds` list to localStorage on component unmount
   // learn more here: https://reactjs.org/docs/hooks-effect.html#effects-with-cleanup
   useEffect(() => {
@@ -68,26 +80,9 @@ const SearchBooks = () => {
     }
 
     try {
-      const [saveBook, {error}] = useMutation(SAVE_BOOK, {
-        update(cache, {data: {saveBook}}) {    //update cache list after mutation to display new values
-          try { 
-            const { me } = cache.readQuery({ query: GET_ME }); 
-            cache.writeQuery({ 
-              query: GET_ME, 
-              data: { savedBooks: [saveBook, ...me.savedBooks] }, 
-            }); 
-          } catch (e) { 
-            console.error(e); 
-          }
-        }
-      });
-      try {
-        const response = await saveBook({ variables: {...bookToSave} })
-        // const response = await saveBook(bookToSave, token);
-        setSavedBookIds([...savedBookIds, bookToSave.bookId]);
-      } catch (e) {
-        console.error('something went wrong!')
-      }      
+      const response = await saveBook({ variables: {...bookToSave} })
+      // const response = await saveBook(bookToSave, token);
+      setSavedBookIds([...savedBookIds, bookToSave.bookId]);     
     } catch (err) {
       console.error(err);
     }
